@@ -1,0 +1,29 @@
+services:
+  lidar_nav2:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        CUDA_IMAGE: nvidia/cuda:12.6.3-devel-ubuntu22.04
+        ROS_DISTRO: humble
+        USERNAME: ${USER}
+        USER_UID: ${UID:-1000}
+        USER_GID: ${GID:-1000}
+    image: ros2-gazebo-dev:humble-cuda
+    network_mode: host
+    privileged: true
+    gpus: all
+    environment:
+      ROS_DISTRO: humble
+      GZ_VERSION: fortress
+      DISPLAY: ${DISPLAY:-:0}
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility,graphics
+      USERNAME: ${USER}
+      WORKSPACE: /home/${USER}/ros2_ws
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Mount workspace for manual colcon / 3d_bbs builds inside the container
+      - .:/home/${USER}/ros2_ws:rw
+    stdin_open: true
+    tty: true
