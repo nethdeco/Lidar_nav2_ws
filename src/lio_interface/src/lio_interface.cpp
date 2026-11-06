@@ -13,7 +13,7 @@ LioInterface::LioInterface(const rclcpp::NodeOptions & options)
 
     data_position_ = std::make_shared<lio_interface::data_>();
 
-    // 初始化 TF 监听器
+    // Initialize TF listener
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
@@ -36,11 +36,11 @@ LioInterface::~LioInterface(){
 }
 
 /**
- * @brief 将 lidar_odom 坐标系下的点云转换到 odom 坐标系下
+ * @brief Transform the point cloud from the lidar_odom frame into the odom frame.
  *
- * @param[in]  msg 输入的在 lidar_odom 坐标系下的点云（sensor_msgs::PointCloud2）
- * @param[in]  tf_odom_to_lidar_odom_  odom 和 lidar_odom 之间的变换关系（tf2::Transform）
- * @param[out] out odom 坐标系下的点云（sensor_msgs::PointCloud2）
+ * @param[in]  msg Input point cloud in the lidar_odom frame (sensor_msgs::PointCloud2)
+ * @param[in]  tf_odom_to_lidar_odom_ Transform between odom and lidar_odom (tf2::Transform)
+ * @param[out] out Point cloud in the odom frame (sensor_msgs::PointCloud2)
  *
  */
 void LioInterface::pointCloudCallback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg){
@@ -52,14 +52,15 @@ void LioInterface::pointCloudCallback(const sensor_msgs::msg::PointCloud2::Const
 }
 
 /**
- * @brief 获取 fast-lio 中 camera_init 到 body 的TF变换，获取 base_footprint 到 lidar_frame 的TF变换;
- *        计算 odom 到 lidar_frame 的TF变换，然后将 odom 坐标系下的 lidar_frame 位姿发布到 /lidar_odometry 话题.
+ * @brief Get the FAST-LIO camera_init -> body TF and the base_footprint -> lidar_frame TF;
+ *        compute the odom -> lidar_frame TF, then publish the lidar_frame pose in odom
+ *        on the /lidar_odometry topic.
  */
 void LioInterface::odometryCallback(const nav_msgs::msg::Odometry::ConstSharedPtr msg){
 
     if (!base_frame_to_lidar_initialized_) {
     try {
-        // 从TF树中获取 livox_frame 在 base_footprint 下的位姿 (T_base_footprint_livox)
+        // Look up livox_frame pose in base_footprint from the TF tree (T_base_footprint_livox)
         auto tf_stamped_tf_base_frame_to_lidar_frame = tf_buffer_->lookupTransform(
             "base_footprint", 
             "livox_frame", 
@@ -67,12 +68,12 @@ void LioInterface::odometryCallback(const nav_msgs::msg::Odometry::ConstSharedPt
             std::chrono::seconds(1)   
         ); 
 
-        tf2::Transform tf_base_frame_to_lidar_frame;        // base_frame 到 lidar_frame 的TF变换
+        tf2::Transform tf_base_frame_to_lidar_frame;        // TF from base_frame to lidar_frame
 
         // tf2::fromMsg(tf_stamped_lidar_odom_to_lidar_frame.transform, tf_lidar_odom_to_lidar_frame);
         tf2::fromMsg(tf_stamped_tf_base_frame_to_lidar_frame.transform, tf_base_frame_to_lidar_frame);
 
-        // 在初始位置，lidar_frame 到 base_footprint 的静态变换 = odom 到 lidar_odom 的关系
+        // At the initial pose, the static lidar_frame -> base_footprint transform equals odom -> lidar_odom
         tf_odom_to_lidar_odom_ = tf_base_frame_to_lidar_frame;
 
         base_frame_to_lidar_initialized_ = true;
@@ -83,12 +84,12 @@ void LioInterface::odometryCallback(const nav_msgs::msg::Odometry::ConstSharedPt
     }
     }
 
-    tf2::Transform tf_lidar_odom_to_lidar_frame;        // lidar_odom 到 lidar_frame 的变换
-    tf2::Transform tf_odom_to_lidar;                    // odom 到 lidar_frame 的变换
+    tf2::Transform tf_lidar_odom_to_lidar_frame;        // Transform from lidar_odom to lidar_frame
+    tf2::Transform tf_odom_to_lidar;                    // Transform from odom to lidar_frame
 
     tf2::fromMsg(msg->pose.pose, tf_lidar_odom_to_lidar_frame);
 
-    // 获取 odom 到 lidar_frame 的变换
+    // Compute the odom -> lidar_frame transform
     tf_odom_to_lidar = tf_odom_to_lidar_odom_ * tf_lidar_odom_to_lidar_frame;
 
     nav_msgs::msg::Odometry out;

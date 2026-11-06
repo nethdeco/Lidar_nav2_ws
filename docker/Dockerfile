@@ -66,7 +66,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apt apt-utils \
     net-tools \
     vim \
+    tmux \
     git wget curl \
+    gnome-terminal \
     build-essential cmake ninja-build pkg-config \
     python3-pip python3-dev python3-tk python3-numpy python3-matplotlib \
     python3-colcon-common-extensions python3-rosdep python3-vcstool \

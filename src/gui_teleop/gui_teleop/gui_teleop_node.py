@@ -33,7 +33,7 @@ RED         = '#c07070'      # 状态红
 DIVIDER     = '#38383a'
 
 # 高斯模糊背景参数
-WIN_W, WIN_H = 780, 640
+WIN_W, WIN_H = 1280, 640
 
 
 def rounded_rect(canvas, x, y, w, h, r, fill, outline=''):
